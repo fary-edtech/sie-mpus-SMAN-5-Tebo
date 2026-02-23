@@ -577,22 +577,25 @@
 
 <script>
 
-
-/* ========================================================
+const myButton = document.getElementById("btn-back-to-top");
+  window.onscroll = function () { scrollFunction(); };
+  function scrollFunction() {
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { myButton.style.display = "block"; } else { myButton.style.display = "none"; }
+  }
+  function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+ /* ========================================================
    ADAPTOR AJAIB (PROXY GOOGLE SCRIPT UNTUK GITHUB)
 ======================================================== */
 
-// PASTE URL WEB APP GOOGLE SCRIPT-MU DI SINI:
+// PASTE URL WEB APP GOOGLE SCRIPT-MU DI BAWAH INI:
 const API_URL = "https://script.google.com/a/macros/admin.sma.belajar.id/s/AKfycbyD5--EWicg_Vh5yneUgCuATd8_VVkaDNVaV-uxnmylaWScv4MIAMvGphFxvek5r-Ka/exec";
-    
+
 function apiHelper() {
     let successCb = null;
     let failCb = null;
     
     const execute = (action, payload = {}) => {
         payload.action = action;
-        
-        // Gunakan mode text/plain untuk melewati blokir CORS Google
         fetch(API_URL, {
             redirect: 'follow', 
             method: 'POST',
@@ -608,7 +611,6 @@ function apiHelper() {
         withFailureHandler: function(cb) { failCb = cb; return this; },
         withSuccessHandler: function(cb) { successCb = cb; return this; },
         
-        // Memetakan semua panggilan ke API Router
         getAppConfig: function() { execute('getAppConfig'); },
         loginUser: function(u, p) { execute('loginUser', {username: u, password: p}); },
         checkMember: function(id) { execute('checkMember', {id: id}); },
@@ -630,31 +632,14 @@ function apiHelper() {
     };
 }
 
-// Trik agar "google.script.run" di kodinganmu tetap bisa dipakai di luar ekosistem Google!
-const google = {
-    get script() {
-        return { get run() { return apiHelper(); } }
-    }
-};
+const google = { get script() { return { get run() { return apiHelper(); } } } };
 
 /* ========================================================
-   DI BAWAH INI ADALAH KODE JAVASCRIPT ASLI MILIKMU (PASTE DI BAWAH SINI)
+   GLOBAL VARIABLES & TOOLS
 ======================================================== */
-
-  const myButton = document.getElementById("btn-back-to-top");
-  window.onscroll = function () { scrollFunction(); };
-  function scrollFunction() {
-    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { myButton.style.display = "block"; } else { myButton.style.display = "none"; }
-  }
-  function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-
-
-// --- GLOBAL VARIABLES ---
 let currentUser = null;
 let currentUsername = null; 
-let bookData = [];
-let memberData = [];
-let historyData = [];
+let bookData = [], memberData = [], historyData = [];
 let bookPage = 1, memberPage = 1, historyPage = 1;
 let bookTotal = 0, memberTotal = 0, historyTotal = 0;
 let rowsPerPage = 10;
@@ -664,14 +649,51 @@ let globalLogoUrl = '';
 let globalLogoBase64 = ''; 
 let searchTimeout = null;
 
-// --- VARIABEL CROPPER GAMBAR ---
 let cropperInstance = null;
 let currentCropTarget = ''; 
 let uploadBgBase64 = null; 
 let uploadLogoBase64 = null; 
 
+// --- FITUR BARU: ANIMASI LOADING HITUNG MUNDUR ---
+let swalCountdownInterval;
+function showSmartLoading(title, desc) {
+    let timer = 7;
+    Swal.fire({
+        title: title,
+        html: `
+            <div class="mb-3 text-secondary" style="font-size: 0.9rem;">${desc}</div>
+            <div id="swal-timer-wrapper" class="badge bg-primary shadow-sm fs-6 px-3 py-2 rounded-pill">
+                <i class="fas fa-stopwatch me-1"></i> <span id="swal-timer">${timer}</span> detik
+            </div>
+        `,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+            if (swalCountdownInterval) clearInterval(swalCountdownInterval);
+            swalCountdownInterval = setInterval(() => {
+                timer--;
+                const timerEl = document.getElementById('swal-timer');
+                const wrapperEl = document.getElementById('swal-timer-wrapper');
+                if (timer > 0) {
+                    if (timerEl) timerEl.innerText = timer;
+                } else {
+                    clearInterval(swalCountdownInterval);
+                    if (wrapperEl) {
+                        wrapperEl.className = "badge bg-warning text-dark shadow-sm fs-6 px-3 py-2 rounded-pill";
+                        wrapperEl.innerHTML = '<i class="fas fa-cog fa-spin me-1"></i> Data sedang diproses...';
+                    }
+                }
+            }, 1000);
+        },
+        willClose: () => {
+            if (swalCountdownInterval) clearInterval(swalCountdownInterval);
+        }
+    });
+}
+
 const handleNetworkError = (err) => {
     console.error(err);
+    if (swalCountdownInterval) clearInterval(swalCountdownInterval);
     Swal.close(); 
     document.querySelectorAll('.spinner-border, .spinner-grow').forEach(el => el.parentElement.classList.add('d-none'));
     Swal.fire('Koneksi Gagal', 'Terjadi kesalahan jaringan atau server lambat. Pastikan internet Anda stabil lalu coba lagi.', 'error');
@@ -681,10 +703,7 @@ function safeIsoDate(val) {
     if (!val) return '';
     const d = new Date(val);
     if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function safeDisplayDate(val) {
@@ -757,15 +776,13 @@ function openExportHistoryModal() {
             return { s, e };
         }
     }).then((result) => {
-        if(result.isConfirmed) {
-            processExportHistory(result.value.s, result.value.e);
-        }
+        if(result.isConfirmed) processExportHistory(result.value.s, result.value.e);
     });
 }
 
 function processExportHistory(start, end) {
     const isArchive = document.getElementById('chkArsip').checked;
-    Swal.fire({ title: 'Menyiapkan Data...', html: 'Mengambil data dari server.', didOpen: () => Swal.showLoading() });
+    showSmartLoading('Menyiapkan Data...', 'Sedang merangkum riwayat dari server.');
 
     google.script.run
       .withFailureHandler(handleNetworkError)
@@ -784,7 +801,7 @@ function processExportHistory(start, end) {
     }).getExportHistoryByDate(start, end, isArchive);
 }
 
-// --- LOGIKA CROPPER GAMBAR (HYBRID) ---
+// --- LOGIKA CROPPER ---
 document.getElementById('fileLogo').addEventListener('change', function(e) { openCropper(e, 'logo', 1/1); });
 document.getElementById('fileBg').addEventListener('change', function(e) { openCropper(e, 'bg', 5/3); });
 
@@ -792,22 +809,15 @@ function openCropper(e, target, ratio) {
     const file = e.target.files[0];
     if(!file) return;
     currentCropTarget = target;
-    
     const reader = new FileReader();
     reader.onload = function(event) {
         const img = document.getElementById('imageToCrop');
         img.src = event.target.result;
-        
         const cropModal = new bootstrap.Modal(document.getElementById('modalCrop'));
         cropModal.show();
-        
         document.getElementById('modalCrop').addEventListener('shown.bs.modal', function () {
             if(cropperInstance) cropperInstance.destroy();
-            cropperInstance = new Cropper(img, {
-                aspectRatio: ratio,
-                viewMode: 1,
-                autoCropArea: 1
-            });
+            cropperInstance = new Cropper(img, { aspectRatio: ratio, viewMode: 1, autoCropArea: 1 });
         }, {once: true});
     };
     reader.readAsDataURL(file);
@@ -816,10 +826,8 @@ function openCropper(e, target, ratio) {
 
 document.getElementById('btnApplyCrop').addEventListener('click', function() {
     if(!cropperInstance) return;
-    
     if(currentCropTarget === 'logo') {
-        // LOGO: Ukuran kecil 150x150 agar data Base64 pendek dan tetap transparan
-        const canvas = cropperInstance.getCroppedCanvas({ width: 150, height: 150 });
+        const canvas = cropperInstance.getCroppedCanvas({ width: 400, height: 400 });
         uploadLogoBase64 = canvas.toDataURL('image/png'); 
         document.getElementById('previewLogo').src = uploadLogoBase64; 
         document.getElementById('previewLogo').style.display = 'block';
@@ -847,7 +855,6 @@ window.onload = function() {
         showPage(savedPage || 'dashboard');
         setupEnterKeys();
     }
-
     loadAppConfig();
     
     const toggleBtn = document.getElementById('btn-toggle-menu');
@@ -928,14 +935,16 @@ function loadAppConfig() {
         const bgSrc = cfg.UrlBackground;
 
         if(logoSrc) {
+            globalLogoUrl = logoSrc; // KUNCI PERBAIKAN 1: Simpan ke memori global
+            
             const l1 = document.getElementById('login-logo');
             const l2 = document.getElementById('sidebar-logo');
-            const l3 = document.getElementById('login-logo-center'); // <--- Logo yang di tengah
+            const l3 = document.getElementById('login-logo-center');
             
             const fallback = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
             if(l1) { l1.src = logoSrc; l1.onerror = () => l1.src = fallback; }
             if(l2) { l2.src = logoSrc; l2.onerror = () => l2.src = fallback; }
-            if(l3) { l3.src = logoSrc; l3.onerror = () => l3.src = fallback; } // <--- Update logo tengah
+            if(l3) { l3.src = logoSrc; l3.onerror = () => l3.src = fallback; }
             
             const pLogo = document.getElementById('previewLogo');
             if(pLogo && logoSrc.length > 5) { pLogo.src = logoSrc; pLogo.style.display = 'block'; }
@@ -1062,7 +1071,6 @@ function showPage(pageId) {
         'riwayat': 'Riwayat Transaksi', 'buku': 'Data Buku', 'anggota': 'Data Anggota', 'pengaturan': 'Pengaturan Sistem'
     };
     document.getElementById('page-title').textContent = titles[pageId] || 'Dashboard';
-    
     stopScanner();
 
     if(pageId === 'dashboard') loadDashboard();
@@ -1238,7 +1246,10 @@ function submitBuku(){
         isEdit: document.getElementById('bIsEdit').value==='true'
     };
     if(!d.kode || !d.judul) { return Swal.fire('Data Belum Lengkap', 'Kode dan Judul Buku wajib diisi!', 'warning'); }
-    Swal.fire({title:'Menyimpan...',html:'Mohon tunggu sebentar.',allowOutsideClick:false,didOpen:()=>{Swal.showLoading()}});
+    
+    // Terapkan Smart Loading
+    showSmartLoading('Menyimpan Buku...', 'Mengirim data ke sistem pusat.');
+    
     google.script.run
         .withFailureHandler(handleNetworkError)
         .withSuccessHandler(r=>{ 
@@ -1307,8 +1318,12 @@ function submitAnggota(){
         nohp: document.getElementById('mHp').value, 
         isEdit: document.getElementById('mIsEdit').value==='true'
     };
+
     if(!d.id || !d.nama) { return Swal.fire('Data Belum Lengkap', 'ID/NISN dan Nama Anggota wajib diisi!', 'warning'); }
-    Swal.fire({title:'Menyimpan...',html:'Sedang memproses data anggota.',allowOutsideClick:false,didOpen:()=>{Swal.showLoading()}});
+
+    // Terapkan Smart Loading
+    showSmartLoading('Menyimpan Anggota...', 'Memperbarui direktori anggota.');
+
     google.script.run
         .withFailureHandler(handleNetworkError)
         .withSuccessHandler(r=>{ 
@@ -1428,7 +1443,6 @@ function loadSettingsForm() {
     }).getAppConfig();
 }
 
-// --- FUNGSI SAVE SETTINGS DIPERBARUI ---
 function saveSettings() {
     const data = {
         namaSekolah: document.getElementById('cfgNama').value, 
@@ -1446,10 +1460,10 @@ function saveSettings() {
         idFolder: document.getElementById('cfgFolder').value
     };
     
-    let loadingText = 'Menyimpan pengaturan...';
-    if(uploadBgBase64 || uploadLogoBase64) loadingText = 'Mengunggah gambar ke Drive...<br><span class="small text-danger">Mohon tunggu beberapa detik. Jangan tutup halaman.</span>';
-
-    Swal.fire({title: 'Memproses...', html: loadingText, allowOutsideClick: false, didOpen:()=>Swal.showLoading()});
+    // Terapkan Smart Loading
+    let desc = 'Sedang memperbarui aturan dan identitas...';
+    if(uploadBgBase64 || uploadLogoBase64) desc = 'Sedang mengunggah file foto ke Google Drive...';
+    showSmartLoading('Menyimpan Pengaturan...', desc);
     
     google.script.run
         .withFailureHandler(handleNetworkError)
@@ -1469,7 +1483,7 @@ function updateAccount() {
     if(!newUser || !newPass) { Swal.fire('Error', 'Wajib diisi', 'warning'); return; }
     Swal.fire({ title: 'Konfirmasi', text: 'Anda akan logout.', icon: 'warning', showCancelButton: true }).then(r => { 
         if(r.isConfirmed) { 
-            Swal.fire({title:'Mengupdate...', didOpen:()=>Swal.showLoading()}); 
+            showSmartLoading('Mengupdate Akun...', 'Menyinkronkan data kredensial baru.');
             google.script.run
                 .withFailureHandler(handleNetworkError)
                 .withSuccessHandler(res => { if(res.status) { localStorage.clear(); location.reload(); } else Swal.fire('Gagal', res.message, 'error'); }).updateUserCredentials(currentUsername, newUser, newPass); 
@@ -1489,7 +1503,9 @@ function processImport(i){
     const f=i.files[0]; const r=new FileReader();
     r.onload=(e)=>{ 
         const d=new Uint8Array(e.target.result); const wb=XLSX.read(d,{type:'array'}); 
-        Swal.fire({ title: 'Mengimpor...', html: 'Sedang mengecek duplikasi dan validasi data.', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+        
+        // Terapkan Smart Loading
+        showSmartLoading('Mengimpor Excel...', 'Mengecek duplikasi dan memasukkan data.');
 
         google.script.run
             .withFailureHandler(handleNetworkError)
@@ -1506,7 +1522,7 @@ function processImport(i){
 }
 
 function exportData(type) {
-    Swal.fire({title: 'Sedang Mengunduh...',html: 'Menyiapkan seluruh data dari server.<br>Mohon jangan tutup halaman.',allowOutsideClick: false,didOpen: () => { Swal.showLoading() }});
+    showSmartLoading('Mempersiapkan Unduhan...', 'Mengumpulkan ribuan baris data dari database.');
     google.script.run
         .withFailureHandler(handleNetworkError)
         .withSuccessHandler(serverData => {
@@ -1543,9 +1559,11 @@ function printLabel(kode, judul) {
 function printCard(id) {
     const m = memberData.find(x => x[0] == id); if (!m) return;
     const nama = m[1]; const jk = m[3] == 'L' ? 'Laki-laki' : 'Perempuan'; const tgl = m[4] ? new Date(m[4]).toLocaleDateString('id-ID') : '-';
-    const sekolah = document.getElementById('sidebar-school-name').innerText || 'Perpus'; const logo = globalLogoUrl || globalLogoBase64;
+    const sekolah = document.getElementById('sidebar-school-name').innerText || 'Perpus'; 
+    const logo = globalLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'; // Fallback aman
     
-    const htmlPreview = '<div style="display:flex;justify-content:center;padding:10px;"><div class="id-card-preview" style="width:320px;height:200px;background:#f8f9fa;border:1px solid #ddd;border-radius:15px;overflow:hidden;text-align:left;position:relative;"><div style="background:#4361ee;height:50px;display:flex;align-items:center;padding:0 15px;color:white;"><img src="' + logo + '" style="height:35px;width:35px;background:#fff;border-radius:50%;padding:2px;margin-right:10px;"><div style="font-weight:bold;font-size:13px;">' + sekolah + '</div></div><div style="padding:15px;display:flex;justify-content:space-between;"><div style="flex:1;"><h3 style="margin:0 0 5px;font-size:16px;">' + nama + '</h3><p style="font-size:11px;color:#666;margin:0;">ID: <b>' + id + '</b></p><p style="font-size:11px;color:#666;margin:0;">' + jk + '</p><p style="font-size:11px;color:#666;margin:0;">Lahir: ' + tgl + '</p></div><div id="qrcode-mem"></div></div><div style="position:absolute;bottom:10px;width:100%;text-align:center;font-size:10px;font-weight:bold;color:#4361ee;">KARTU PERPUSTAKAAN DIGITAL</div></div></div>';
+    // KUNCI PERBAIKAN 2: Tambahkan crossorigin="anonymous" di tag img agar tidak diblokir saat dicetak
+    const htmlPreview = '<div style="display:flex;justify-content:center;padding:10px;"><div class="id-card-preview" style="width:320px;height:200px;background:#f8f9fa;border:1px solid #ddd;border-radius:15px;overflow:hidden;text-align:left;position:relative;"><div style="background:#4361ee;height:50px;display:flex;align-items:center;padding:0 15px;color:white;"><img src="' + logo + '" crossorigin="anonymous" style="height:35px;width:35px;background:#fff;border-radius:50%;padding:2px;margin-right:10px;"><div style="font-weight:bold;font-size:13px;">' + sekolah + '</div></div><div style="padding:15px;display:flex;justify-content:space-between;"><div style="flex:1;"><h3 style="margin:0 0 5px;font-size:16px;">' + nama + '</h3><p style="font-size:11px;color:#666;margin:0;">ID: <b>' + id + '</b></p><p style="font-size:11px;color:#666;margin:0;">' + jk + '</p><p style="font-size:11px;color:#666;margin:0;">Lahir: ' + tgl + '</p></div><div id="qrcode-mem"></div></div><div style="position:absolute;bottom:10px;width:100%;text-align:center;font-size:10px;font-weight:bold;color:#4361ee;">KARTU PERPUSTAKAAN DIGITAL</div></div></div>';
     
     Swal.fire({ 
         width: 450, 
@@ -1566,7 +1584,9 @@ function processDownloadLabel(kode, judul) {
     const c = document.createElement('div'); c.style.position='fixed'; c.style.top='-9999px'; 
     c.innerHTML = '<div id="cap-lbl" style="width:300px;height:180px;background:#fff;border:4px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;"><div style="font-weight:bold;font-size:16px;margin-bottom:10px;">' + judul + '</div><div style="background:#000;color:#fff;padding:4px 10px;">' + kode + '</div><div id="qr-dl" style="margin-top:15px;"></div></div>';
     document.body.appendChild(c); new QRCode(document.getElementById("qr-dl"), { text: kode, width: 80, height: 80 });
-    Swal.fire({title:'Menyiapkan...', didOpen:()=>Swal.showLoading()});
+    
+    showSmartLoading('Menyiapkan Label...', 'Menggambar komponen desain.');
+    
     setTimeout(() => { 
         html2canvas(document.getElementById('cap-lbl'), {scale:2}).then(cv => { 
             document.body.removeChild(c); 
@@ -1583,15 +1603,18 @@ function processDownloadLabel(kode, judul) {
 function processDownloadCard(id) {
     const m = memberData.find(x => x[0] == id); if (!m) return;
     const nama = m[1]; const jk = m[3] == 'L' ? 'Laki-laki' : 'Perempuan'; const tgl = m[4] ? new Date(m[4]).toLocaleDateString('id-ID') : '-';
-    const sek = document.getElementById('sidebar-school-name').innerText; const logo = globalLogoUrl || globalLogoBase64;
+    const sek = document.getElementById('sidebar-school-name').innerText || 'Perpus'; 
+    const logo = globalLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
     
     const c = document.createElement('div'); c.style.position='fixed'; c.style.top='-9999px'; 
-    c.innerHTML = '<div id="cap-card" style="width:400px;height:250px;background:#f8f9fa;border:1px solid #ddd;border-radius:15px;overflow:hidden;text-align:left;position:relative;font-family:Arial;"><div style="background:#4361ee;height:60px;display:flex;align-items:center;padding:0 20px;color:white;"><img src="' + logo + '" style="height:45px;width:45px;background:#fff;border-radius:50%;padding:2px;margin-right:15px;"><div style="font-weight:bold;font-size:16px;">' + sek + '</div></div><div style="padding:20px;display:flex;justify-content:space-between;"><div style="flex:1;"><h3 style="margin:0 0 5px;font-size:20px;">' + nama + '</h3><p style="font-size:13px;color:#666;margin:2px 0;">ID: <b>' + id + '</b></p><p style="font-size:13px;color:#666;margin:2px 0;">' + jk + '</p><p style="font-size:13px;color:#666;margin:2px 0;">Lahir: ' + tgl + '</p></div><div id="qr-c-dl"></div></div><div style="position:absolute;bottom:15px;width:100%;text-align:center;font-size:12px;font-weight:bold;color:#4361ee;">KARTU PERPUSTAKAAN DIGITAL</div></div>';
+    c.innerHTML = '<div id="cap-card" style="width:400px;height:250px;background:#f8f9fa;border:1px solid #ddd;border-radius:15px;overflow:hidden;text-align:left;position:relative;font-family:Arial;"><div style="background:#4361ee;height:60px;display:flex;align-items:center;padding:0 20px;color:white;"><img src="' + logo + '" crossorigin="anonymous" style="height:45px;width:45px;background:#fff;border-radius:50%;padding:2px;margin-right:15px;"><div style="font-weight:bold;font-size:16px;">' + sek + '</div></div><div style="padding:20px;display:flex;justify-content:space-between;"><div style="flex:1;"><h3 style="margin:0 0 5px;font-size:20px;">' + nama + '</h3><p style="font-size:13px;color:#666;margin:2px 0;">ID: <b>' + id + '</b></p><p style="font-size:13px;color:#666;margin:2px 0;">' + jk + '</p><p style="font-size:13px;color:#666;margin:2px 0;">Lahir: ' + tgl + '</p></div><div id="qr-c-dl"></div></div><div style="position:absolute;bottom:15px;width:100%;text-align:center;font-size:12px;font-weight:bold;color:#4361ee;">KARTU PERPUSTAKAAN DIGITAL</div></div>';
     document.body.appendChild(c); new QRCode(document.getElementById("qr-c-dl"), { text: id, width: 85, height: 85 });
     
-    Swal.fire({title:'Menyiapkan...', didOpen:()=>Swal.showLoading()});
+    showSmartLoading('Menyiapkan Kartu...', 'Merender foto dan QR Code...');
+    
+    // KUNCI PERBAIKAN 3: Tambahkan allowTaint: true agar gambar dari Google Drive diizinkan
     setTimeout(() => { 
-        html2canvas(document.getElementById('cap-card'), {scale:2, useCORS:true}).then(cv => { 
+        html2canvas(document.getElementById('cap-card'), {scale:2, useCORS:true, allowTaint:true}).then(cv => { 
             document.body.removeChild(c); 
             const img = cv.toDataURL(); 
             Swal.fire({ title: 'Review', imageUrl: img, imageWidth: 400, showCancelButton: true, confirmButtonText: 'Download' }).then(res => { 
@@ -1603,7 +1626,6 @@ function processDownloadCard(id) {
     }, 800);
 }
 
-// --- FUNGSI TOMBOL REFRESH GLOBAL ---
 function refreshCurrentPage() {
     const btn = document.getElementById('btn-global-refresh');
     if(btn) {
@@ -1618,6 +1640,7 @@ function refreshCurrentPage() {
     else if(activePage === 'riwayat') { historyPage=1; loadHistory(); }
     else if(activePage === 'pengaturan') loadSettingsForm();
 }
+
 </script>
 
   </body>
