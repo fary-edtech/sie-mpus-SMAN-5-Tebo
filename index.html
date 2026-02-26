@@ -1,11 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <base target="_top">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>SMAN 5 Tebo - SiE-MPuS</title>
     <link rel="icon" type="image/png" href="./logo.png">
+    
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -26,6 +28,16 @@
         --sidebar-width: 260px;
         --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
       }
+              /* Mencegah zoom cubitan layar dan efek membal saat mentok */
+html, body {
+    touch-action: pan-y; 
+    overscroll-behavior-y: none; }
+
+/* Mencegah zoom otomatis saat mengklik kolom input / form */
+input, button, select, textarea {
+    touch-action: manipulation; 
+    font-size: 16px !important; }
+
 
       body {
         font-family: 'Poppins', sans-serif;
@@ -106,14 +118,12 @@
       
       .w-md-25 { width: 25%; }
       @media (max-width: 768px) { .w-md-25 { width: 100%; } }
-</style>
 
-    <style>
-  /* Tombol Scroll ke Atas */
-  #btn-back-to-top {
+/* Naikkan tombol scroll to top di layar HP */
+   #btn-back-to-top {
     position: fixed;
-    bottom: 25px;
-    right: 25px;
+    bottom: 85px;
+    right: 20px;
     display: none; /* Tersembunyi default */
     z-index: 1050; /* Di atas elemen lain */
     width: 45px;
@@ -126,6 +136,76 @@
     transform: translateY(-3px);
     box-shadow: 0 6px 12px rgba(0,0,0,0.2);
   }
+
+/* =========================================
+   TAMPILAN KHUSUS HP (MOBILE APP STYLE)
+========================================= */
+@media (max-width: 768px) {
+    /* Sembunyikan Sidebar & Navbar lama di HP */
+    .sidebar, .navbar.bg-white.shadow-sm { 
+        display: none !important; 
+    }
+    
+    /* Beri ruang di atas dan bawah agar konten tidak tertutup menu */
+    .content { 
+        margin-left: 0; 
+        width: 100%; 
+        padding: 75px 10px 85px 10px !important; 
+    }
+
+    /* HEADER ATAS */
+    .mobile-header {
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 15px; z-index: 1050;
+    }
+    .mobile-header-left { display: flex; align-items: center; gap: 10px; }
+    .mobile-header-left img { height: 35px; width: 35px; object-fit: contain; }
+    .mobile-header-left span { font-weight: 700; color: var(--primary-color); font-size: 15px; }
+    
+    .mobile-header-right { display: flex; gap: 18px; align-items: center; }
+    .top-icon-btn { 
+        display: flex; flex-direction: column; align-items: center; 
+        color: #666; cursor: pointer; 
+    }
+    .top-icon-btn i { font-size: 18px; margin-bottom: 2px; }
+    .top-icon-btn span { font-size: 9px; font-weight: 400; letter-spacing: 0.5px;} /* Tulisan tipis & kecil */
+
+    /* MENU BAWAH (BOTTOM NAV) */
+    .mobile-bottom-nav {
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+        background: white; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        display: flex; justify-content: space-around; align-items: center;
+        z-index: 1050; border-radius: 20px 20px 0 0;
+    }
+    .bottom-nav-item {
+        display: flex; flex-direction: column; align-items: center; color: #a0a0a0;
+        text-decoration: none; width: 20%; cursor: pointer; transition: 0.3s;
+    }
+    .bottom-nav-item.active { color: var(--primary-color); }
+    .bottom-nav-item.active i { transform: translateY(-2px); }
+    .bottom-nav-item i { font-size: 20px; margin-bottom: 4px; transition: transform 0.2s; }
+    .bottom-nav-item span { font-size: 10px; font-weight: 600; }
+
+    /* TOMBOL HOME DI TENGAH (BERBEDA/MENGAMBANG) */
+    .bottom-nav-item.home-btn { position: relative; top: -15px; }
+    .bottom-nav-item.home-btn .fab-inner {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        width: 55px; height: 55px; border-radius: 50%;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+        border: 4px solid var(--bg-color); color: white;
+    }
+    .bottom-nav-item.home-btn .fab-inner i { font-size: 22px; margin: 0; color: white !important;}
+    .bottom-nav-item.home-btn span { position: absolute; bottom: -18px; color: var(--primary-color); }
+}
+
+/* Sembunyikan menu mobile saat di Desktop/Laptop */
+@media (min-width: 769px) {
+    .mobile-header, .mobile-bottom-nav { display: none !important; }
+}
+
   </style>
     
   </head>
@@ -194,6 +274,48 @@
     </div>
 
     <div id="main-app" class="d-none">
+
+      <div class="mobile-header">
+    <div class="mobile-header-left">
+        <img id="mobile-logo-img" src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" crossorigin="anonymous">
+        <span id="mobile-school-text">SiE-MPuS</span>
+    </div>
+    <div class="mobile-header-right">
+        <div class="top-icon-btn" onclick="showPage('riwayat'); updateMobileNav('riwayat')">
+            <i class="fas fa-history"></i><span>Riwayat</span>
+        </div>
+        <div class="top-icon-btn" onclick="showPage('pengaturan'); updateMobileNav('pengaturan')">
+            <i class="fas fa-cog"></i><span>Pengaturan</span>
+        </div>
+        <div class="top-icon-btn text-danger" id="nav-logout-mobile">
+            <i class="fas fa-sign-out-alt"></i><span>Keluar</span>
+        </div>
+    </div>
+</div>
+
+<div class="mobile-bottom-nav">
+    <div class="bottom-nav-item" id="mob-nav-anggota" onclick="showPage('anggota'); updateMobileNav('anggota')">
+        <i class="fas fa-users"></i><span>Siswa</span>
+    </div>
+    <div class="bottom-nav-item" id="mob-nav-peminjaman" onclick="showPage('peminjaman'); updateMobileNav('peminjaman')">
+        <i class="fas fa-qrcode"></i><span>Pinjam</span>
+    </div>
+    
+    <div class="bottom-nav-item home-btn active" id="mob-nav-dashboard" onclick="showPage('dashboard'); updateMobileNav('dashboard')">
+        <div class="fab-inner">
+            <i class="fas fa-home"></i>
+        </div>
+        <span>Home</span>
+    </div>
+
+    <div class="bottom-nav-item" id="mob-nav-pengembalian" onclick="showPage('pengembalian'); updateMobileNav('pengembalian')">
+        <i class="fas fa-hand-holding-heart"></i><span>Kembali</span>
+    </div>
+    <div class="bottom-nav-item" id="mob-nav-buku" onclick="showPage('buku'); updateMobileNav('buku')">
+        <i class="fas fa-book"></i><span>Buku</span>
+    </div>
+</div>
+
       <div class="sidebar shadow-lg" id="sidebar">
         <div style="padding: 25px; text-align: center; border-bottom: 1px solid #f0f0f0;">
           <img id="sidebar-logo" src="" height="50" class="mb-2" crossorigin="anonymous">
@@ -1540,6 +1662,7 @@ function exportData(type) {
 
 function printLabel(kode, judul) {
     const htmlPreview = '<div style="display:flex;justify-content:center;padding:10px;"><div class="book-label-preview" style="width:250px;height:150px;background:#fff;border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;"><div style="font-weight:bold;font-size:14px;margin-bottom:5px;line-height:1.2;max-height:40px;overflow:hidden;">' + judul + '</div><div style="font-size:12px;margin-top:5px;background:#000;color:#fff;padding:2px 8px;border-radius:4px;">' + kode + '</div><div id="qrcode-book" style="margin-top:10px;"></div></div></div>';
+    
     Swal.fire({ 
         title: 'Preview', 
         html: htmlPreview, 
@@ -1548,10 +1671,21 @@ function printLabel(kode, judul) {
         didOpen: () => { new QRCode(document.getElementById("qrcode-book"), { text: kode, width: 70, height: 70 }); } 
     }).then((r) => { 
         if(r.isConfirmed) { 
+            // --- FIX BUG QR CODE CETAK ---
+            const qrBox = document.getElementById("qrcode-book");
+            const canvas = qrBox.querySelector('canvas');
+            const img = qrBox.querySelector('img');
+            if (canvas && img) {
+                img.src = canvas.toDataURL("image/png");
+                img.style.display = "block"; 
+                canvas.style.display = "none"; 
+            }
+            // -----------------------------
+
             var win = window.open('','','height=500,width=500'); 
-            win.document.write('<html><head><title>Print</title></head><body>'+document.querySelector('.book-label-preview').outerHTML+'</body></html>'); 
+            win.document.write('<html><head><title>Cetak Label</title></head><body style="padding:20px;">'+document.querySelector('.book-label-preview').outerHTML+'</body></html>'); 
             win.document.close(); 
-            win.print(); 
+            setTimeout(() => { win.print(); }, 400);
         } 
     });
 }
@@ -1560,9 +1694,8 @@ function printCard(id) {
     const m = memberData.find(x => x[0] == id); if (!m) return;
     const nama = m[1]; const jk = m[3] == 'L' ? 'Laki-laki' : 'Perempuan'; const tgl = m[4] ? new Date(m[4]).toLocaleDateString('id-ID') : '-';
     const sekolah = document.getElementById('sidebar-school-name').innerText || 'Perpus'; 
-    const logo = globalLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'; // Fallback aman
+    const logo = globalLogoUrl || 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'; 
     
-    // KUNCI PERBAIKAN 2: Tambahkan crossorigin="anonymous" di tag img agar tidak diblokir saat dicetak
     const htmlPreview = '<div style="display:flex;justify-content:center;padding:10px;"><div class="id-card-preview" style="width:320px;height:200px;background:#f8f9fa;border:1px solid #ddd;border-radius:15px;overflow:hidden;text-align:left;position:relative;"><div style="background:#4361ee;height:50px;display:flex;align-items:center;padding:0 15px;color:white;"><img src="' + logo + '" crossorigin="anonymous" style="height:35px;width:35px;background:#fff;border-radius:50%;padding:2px;margin-right:10px;"><div style="font-weight:bold;font-size:13px;">' + sekolah + '</div></div><div style="padding:15px;display:flex;justify-content:space-between;"><div style="flex:1;"><h3 style="margin:0 0 5px;font-size:16px;">' + nama + '</h3><p style="font-size:11px;color:#666;margin:0;">ID: <b>' + id + '</b></p><p style="font-size:11px;color:#666;margin:0;">' + jk + '</p><p style="font-size:11px;color:#666;margin:0;">Lahir: ' + tgl + '</p></div><div id="qrcode-mem"></div></div><div style="position:absolute;bottom:10px;width:100%;text-align:center;font-size:10px;font-weight:bold;color:#4361ee;">KARTU PERPUSTAKAAN DIGITAL</div></div></div>';
     
     Swal.fire({ 
@@ -1572,10 +1705,21 @@ function printCard(id) {
         didOpen: () => { new QRCode(document.getElementById("qrcode-mem"), { text: id, width: 65, height: 65 }); } 
     }).then(r => { 
         if(r.isConfirmed) { 
+            // --- FIX BUG QR CODE CETAK ---
+            const qrBox = document.getElementById("qrcode-mem");
+            const canvas = qrBox.querySelector('canvas');
+            const img = qrBox.querySelector('img');
+            if (canvas && img) {
+                img.src = canvas.toDataURL("image/png");
+                img.style.display = "block"; // Tampilkan gambar
+                canvas.style.display = "none"; // Sembunyikan canvas
+            }
+            // -----------------------------
+
             var win = window.open('','','height=500,width=500'); 
-            win.document.write('<html><head><title>Card</title></head><body>'+document.querySelector('.id-card-preview').outerHTML+'</body></html>'); 
+            win.document.write('<html><head><title>Cetak Kartu</title></head><body style="padding:20px;">'+document.querySelector('.id-card-preview').outerHTML+'</body></html>'); 
             win.document.close(); 
-            win.print(); 
+            setTimeout(() => { win.print(); }, 400); // Beri waktu gambar merender sebelum cetak
         } 
     });
 }
@@ -1640,6 +1784,42 @@ function refreshCurrentPage() {
     else if(activePage === 'riwayat') { historyPage=1; loadHistory(); }
     else if(activePage === 'pengaturan') loadSettingsForm();
 }
+
+// --- LOGIKA KHUSUS MENU MOBILE ---
+function updateMobileNav(pageId) {
+    // Hapus class 'active' dari semua menu bawah
+    document.querySelectorAll('.bottom-nav-item').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Tambahkan class 'active' ke menu yang diklik (jika ada di menu bawah)
+    const activeNav = document.getElementById('mob-nav-' + pageId);
+    if(activeNav) {
+        activeNav.classList.add('active');
+    }
+}
+
+// Fungsi Logout Khusus Tombol HP
+document.getElementById('nav-logout-mobile').addEventListener('click', () => {
+    document.getElementById('nav-logout').click(); // Memicu sweetalert logout yang sudah ada
+});
+
+// Update fungsi loadAppConfig agar logo & nama di HP juga ikut berubah dari Database
+const originalLoadAppConfig = loadAppConfig;
+loadAppConfig = function() {
+    originalLoadAppConfig();
+    // Tambahan untuk update Header HP
+    google.script.run.withSuccessHandler(cfg => {
+        if(cfg.UrlLogo) {
+            const mLogo = document.getElementById('mobile-logo-img');
+            if(mLogo) { mLogo.src = cfg.UrlLogo; mLogo.onerror = () => mLogo.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'; }
+        }
+        if(cfg.NamaSekolah) {
+            const mText = document.getElementById('mobile-school-text');
+            if(mText) mText.textContent = cfg.NamaSekolah;
+        }
+    }).getAppConfig();
+};
 
 </script>
 
